@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 //middleware
@@ -34,18 +34,54 @@ async function run() {
     await client.connect();
 
     const carBrandCollection = client.db('carCollectionDB').collection('carBrand');
-    
-    app.get('/car', async(req, res)=>{
+
+    app.get('/car', async (req, res) => {
       const cursor = carBrandCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     })
+    app.get('/car/:id', async (req, res) => {
 
-    app.post('/car', async(req, res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = carBrandCollection.findOne();
+      res.send(result);
+    })
+
+    app.post('/car', async (req, res) => {
       const AddNewCar = req.body;
       const result = await carBrandCollection.insertOne(AddNewCar)
       res.send(result);
-      // console.log(AddNewCar);  
+     
+    })
+
+    app.put('/car/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const carCollection = req.body;
+      const car = {
+        $set: {
+          Name: carCollection.Name,
+          brandName: carCollection.brandName,
+          Price: carCollection.Price,
+          Type: carCollection.Type,
+          Rating: carCollection.Rating,
+          ShortDescription: carCollection.ShortDescription,
+          photoUrl: carCollection.photoUrl
+        }
+      }
+      const result = await carBrandCollection.updateOne(filter, car, options);
+      res.send(result);
+
+    })
+
+    app.delete('/car/:id', async (req, res) => {
+
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await carBrandCollection.deleteOne(query);
+      res.send(result);
     })
 
 
@@ -64,9 +100,9 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('car server is running');
-  })
-  
-  app.listen(port, () => {
-    console.log(`car server is running on this': ${port}`)
-  })
+  res.send('car server is running');
+})
+
+app.listen(port, () => {
+  console.log(`car server is running on this': ${port}`)
+})
